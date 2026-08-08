@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070b16">
+<title>Hyper Downloader</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235b8cff'/%3E%3Cstop offset='1' stop-color='%23a95cff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='24' height='24' rx='6' fill='url(%23g)'/%3E%3Cpath d='M12 7v7m0 0 3-3m-3 3-3-3' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-6.93 8.05A5.5 5.5 0 0 0 7 21.5h10a5.5 5.5 0 0 0 1.93-10.45A7 7 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9.5 14.5 2.5-1.6 2.5 1.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="16.5" cy="16" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="m16 10.5 5-2.5v8l-5-2.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="6" cy="18" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8.5 6H20M8.5 18H20M20 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 21z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M14 3v4h4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2m3.5 0-.8 12a2 2 0 0 1-2 1.9h-5.4a2 2 0 0 1-2-1.9L5.5 7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cancel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="m9.5 9.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="m8.5 12.5 2.5 2.5 4.5-5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L9.5 22 19 10.5h-6.5z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="grid-overlay"></div>
+</div>
+
+<header class="hero">
+  <div class="brand">
+    <div class="logo">
+      <svg class="icon"><use href="#i-logo"></use></svg>
+    </div>
+    <div class="brand-text">
+      <h1>Hyper Downloader <span class="ver">v<span id="ver">…</span></span></h1>
+      <p>Baixe musicas e videos do YouTube e separe faixas automaticamente</p>
+    </div>
+  </div>
+  <div class="health" id="health" title="Dependencias do servidor"></div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button data-tab="baixar" class="active" role="tab" aria-selected="true">
+    <svg class="icon"><use href="#i-download"></use></svg> Baixar
+  </button>
+  <button data-tab="separar" role="tab" aria-selected="false">
+    <svg class="icon"><use href="#i-split"></use></svg> Separar Faixas
+  </button>
+  <button data-tab="arquivos" role="tab" aria-selected="false">
+    <svg class="icon"><use href="#i-folder"></use></svg> Arquivos
+  </button>
+</nav>
+
+<main>
+  <section id="tab-baixar" class="tab active" role="tabpanel">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="title-ico grad-blue"><svg class="icon"><use href="#i-music"></use></svg></span>
+          <div>
+            <h2>Baixar do YouTube</h2>
+            <p class="sub">Cole as URLs abaixo — videos, playlists ou busca</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="form-download">
+        <div class="field">
+          <label for="urls">URLs <span class="hint">(uma por linha)</span></label>
+          <textarea id="urls" rows="4" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Modo</label>
+            <div class="seg" role="group" aria-label="Modo de download">
+              <button type="button" class="seg-btn active" data-mode="audio">
+                <svg class="icon"><use href="#i-audio"></use></svg> Audio
+              </button>
+              <button type="button" class="seg-btn" data-mode="video">
+                <svg class="icon"><use href="#i-video"></use></svg> Video
+              </button>
+              <select id="mode" hidden><option value="audio">Audio</option><option value="video">Video</option></select>
+            </div>
+          </div>
+          <div class="field" id="fmt-field">
+            <label for="audio_format">Formato do audio</label>
+            <select id="audio_format"></select>
+          </div>
+          <div class="field" id="vq-field" hidden>
+            <label for="video_quality">Qualidade do video</label>
+            <select id="video_quality"></select>
+          </div>
+          <div class="field">
+            <label for="output_dir">Diretorio de saida</label>
+            <input type="text" id="output_dir" value="downloads" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="checks">
+          <label class="chip"><input type="checkbox" id="playlist"><span>Playlist completa</span></label>
+          <label class="chip"><input type="checkbox" id="sponsorblock"><span>Remover patrocinios</span></label>
+          <label class="chip"><input type="checkbox" id="embed_metadata" checked><span>Metadados</span></label>
+          <label class="chip"><input type="checkbox" id="embed_thumbnail" checked><span>Capa</span></label>
+        </div>
+
+        <button type="submit" class="btn primary btn-lg">
+          <svg class="icon"><use href="#i-download"></use></svg> Baixar
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section id="tab-separar" class="tab" role="tabpanel">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="title-ico grad-pink"><svg class="icon"><use href="#i-split"></use></svg></span>
+          <div>
+            <h2>Separar Faixas por Silencio</h2>
+            <p class="sub">Detecta os silencios e corta cada musica automaticamente</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Enviar arquivo de audio">
+        <div class="dz-icon"><svg class="icon"><use href="#i-upload"></use></svg></div>
+        <p class="dz-title">Arraste um arquivo de audio aqui</p>
+        <p class="dz-hint">ou clique para escolher do seu computador</p>
+        <div class="dz-file" id="dz-file" hidden>
+          <svg class="icon"><use href="#i-music"></use></svg>
+          <span class="dz-name" id="dz-name"></span>
+          <span class="dz-size" id="dz-size"></span>
+          <button type="button" class="dz-remove" id="dz-remove" aria-label="Remover arquivo">
+            <svg class="icon"><use href="#i-x"></use></svg>
+          </button>
+        </div>
+        <input type="file" id="file-picker" accept="audio/*,.mp3,.flac,.wav,.m4a,.aac,.ogg,.opus,.wma" hidden>
+      </div>
+
+      <form id="form-split">
+        <div class="field">
+          <label for="split-file">Arquivo no servidor <span class="hint">(ou envie acima)</span></label>
+          <input type="text" id="split-file" placeholder="downloads/uploads/album.mp3" spellcheck="false">
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="split-threshold">Threshold de silencio</label>
+            <input type="text" id="split-threshold" value="-40dB" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="split-min-silence">Silencio minimo (s)</label>
+            <input type="number" id="split-min-silence" step="0.1" min="0.1" value="1.0">
+          </div>
+          <div class="field">
+            <label for="split-min-track">Faixa minima (s)</label>
+            <input type="number" id="split-min-track" step="0.5" min="1" value="5.0">
+          </div>
+          <div class="field">
+            <label for="split-fmt">Formato</label>
+            <select id="split-fmt"></select>
+          </div>
+          <div class="field">
+            <label for="split-prefix">Prefixo das faixas</label>
+            <input type="text" id="split-prefix" value="faixa" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="split-output">Diretorio de saida</label>
+            <input type="text" id="split-output" value="separado" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="checks">
+          <label class="chip"><input type="checkbox" id="split-adaptive"><span>Threshold adaptativo automatico</span></label>
+        </div>
+
+        <button type="submit" class="btn primary btn-lg">
+          <svg class="icon"><use href="#i-zap"></use></svg> Separar Faixas
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section id="tab-arquivos" class="tab" role="tabpanel">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="title-ico grad-green"><svg class="icon"><use href="#i-folder"></use></svg></span>
+          <div>
+            <h2>Arquivos</h2>
+            <p class="sub">Baixe ou use seus audios no separador</p>
+          </div>
+        </div>
+        <button class="btn small ghost" id="refresh-files">
+          <svg class="icon"><use href="#i-refresh"></use></svg> Atualizar
+        </button>
+      </div>
+
+      <div class="crumbs" id="crumbs"></div>
+
+      <div class="table-wrap">
+        <table class="files">
+          <thead>
+            <tr><th>Nome</th><th>Tamanho</th><th>Modificado</th><th class="ta-r">Acoes</th></tr>
+          </thead>
+          <tbody id="file-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="files-empty" hidden>
+        <svg class="icon big"><use href="#i-folder"></use></svg>
+        <p>Pasta vazia</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section id="jobs">
+  <div class="section-head">
+    <h2><svg class="icon"><use href="#i-zap"></use></svg> Processos</h2>
+    <button class="btn small ghost" id="clear-finished" hidden>
+      <svg class="icon"><use href="#i-trash"></use></svg> Limpar concluidos
+    </button>
+  </div>
+  <div id="job-list"></div>
+  <div class="empty-state" id="jobs-empty">
+    <svg class="icon big"><use href="#i-music"></use></svg>
+    <p>Nenhum processo ainda</p>
+    <span>Seus downloads e separacoes aparecerao aqui em tempo real</span>
+  </div>
+</section>
+
+<div id="toast-wrap" aria-live="polite"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
