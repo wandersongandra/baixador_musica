@@ -463,7 +463,6 @@ textarea:focus, input:focus, select:focus {
 
 .dz-title { font-size: 15px; font-weight: 600; }
 .dz-hint { color: var(--muted); font-size: 13px; margin-top: 3px; }
-.dz-hint::first-letter { text-transform: none; }
 
 .dz-file {
   display: inline-flex;

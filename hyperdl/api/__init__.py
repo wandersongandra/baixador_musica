@@ -1,3 +1,1 @@
-from hyperdl.api import app
-
-__all__ = ["app"]
+"""API web do Hyper Downloader."""

@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import parse_qs, urlparse
 
-from hyperdl.core.utils import ensure_ffmpeg, ensure_yt_dlp, format_bytes, format_duration
-
 DEFAULT_OUTPUT_DIR = Path("downloads")
 DEFAULT_TEMPLATE = "%(title).180s [%(id)s].%(ext)s"
 DEFAULT_AUDIO_FMT = "mp3"
@@ -143,10 +141,28 @@ def is_playlist_url(url: str) -> bool:
 def map_error(err_msg: str) -> str:
     if "Video unavailable" in err_msg or "Private video" in err_msg:
         return "Video indisponivel ou privado"
+    if "Sign in" in err_msg and "age" in err_msg.lower():
+        return "Restricao de idade (use cookies do navegador)"
     if "Sign in" in err_msg:
         return "Necessita autenticacao (use cookies)"
     if "HTTP Error 429" in err_msg:
         return "Rate limited pelo YouTube (aguarde ou use proxy)"
+    if "HTTP Error 403" in err_msg:
+        return "Acesso negado pelo YouTube (tente atualizar o yt-dlp)"
+    if "HTTP Error 404" in err_msg:
+        return "Video nao encontrado (removido?)"
+    if "Unable to extract" in err_msg:
+        return "Falha ao ler a pagina (atualize o yt-dlp)"
+    if (
+        "Temporary failure" in err_msg
+        or "Name or service not known" in err_msg
+        or "getaddrinfo failed" in err_msg
+    ):
+        return "Falha de rede/DNS (verifique a conexao)"
+    if "timed out" in err_msg or "Timeout" in err_msg:
+        return "Tempo esgotado na conexao"
+    if "ffmpeg" in err_msg.lower():
+        return "Erro no FFmpeg na pos-conversao"
     return err_msg
 
 
@@ -161,10 +177,11 @@ def build_ydl_opts(config: DownloadConfig) -> dict:
         "extractor_retries": config.retries,
         "fragment_retries": config.retries,
         "ignoreerrors": True,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": not config.verbose,
+        "no_warnings": not config.verbose,
         "noprogress": True,
         "no_color": True,
+        "verbose": config.verbose,
         "compat_opts": [],
     }
 
@@ -330,21 +347,22 @@ def download_urls(
         try:
             with yt_dlp.YoutubeDL(dl_opts) as ydl:
                 info = ydl.extract_info(url, download=not config.simulate)
+                filename: str | None = None
+                if info is not None:
+                    try:
+                        filename = str(ydl.prepare_filename(info))
+                        if config.mode == DownloadMode.AUDIO:
+                            filename = str(
+                                Path(filename).with_suffix(f".{config.audio_format}")
+                            )
+                    except Exception:
+                        filename = None
 
             if info is None:
                 fail_url(url, "Nenhuma informacao obtida", start)
                 return
 
             title = info.get("title") or info.get("id") or url
-            filename: str | None = None
-            try:
-                filename = str(ydl.prepare_filename(info))
-                if config.mode == DownloadMode.AUDIO:
-                    filename = str(
-                        Path(filename).with_suffix(f".{config.audio_format}")
-                    )
-            except Exception:
-                pass
 
             fsize = info.get("filesize") or info.get("filesize_approx") or 0
             vid = info.get("id") or ""
@@ -419,7 +437,7 @@ def download_urls(
                 e_url = entry.get("webpage_url") or (
                     f"https://www.youtube.com/watch?v={entry.get('id')}"
                 )
-                download_item(e_url, start)
+                download_item(e_url, time.time())
         else:
             download_item(url, start)
 

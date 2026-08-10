@@ -1,3 +1,1 @@
-from hyperdl.web import static
-
-__all__ = ["static"]
+"""Recursos web estaticos."""

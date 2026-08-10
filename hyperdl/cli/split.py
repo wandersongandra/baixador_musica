@@ -2,7 +2,6 @@
 
 import argparse
 import sys
-import time
 from pathlib import Path
 
 from hyperdl.cli.common import (
@@ -15,11 +14,11 @@ from hyperdl.cli.common import (
     print_report_bar,
     C_BOLD,
     C_CYAN,
-    C_GRAY,
     C_GREEN,
     C_RED,
 )
 from hyperdl.core import splitter as sp
+from hyperdl.core.utils import ensure_ffmpeg
 
 
 def print_report(results: list[sp.SplitResult], nc: bool = False):
@@ -118,7 +117,7 @@ def main() -> int:
 
     print_banner("Separador de Faixas", nc)
 
-    if not sp.ensure_ffmpeg():
+    if not ensure_ffmpeg():
         log_error("FFmpeg/FFprobe nao encontrado no PATH", nc)
         return 1
 
@@ -130,6 +129,7 @@ def main() -> int:
         lead_in=args.lead_in,
         lead_out=args.lead_out,
         fmt=args.format,
+        bitrate=args.bitrate,
         prefix=args.prefix,
         digits=args.digits,
         adaptive=args.adaptive,

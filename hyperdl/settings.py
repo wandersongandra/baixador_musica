@@ -18,7 +18,8 @@ class SettingsManager:
     def _load(self):
         if self.path.exists():
             try:
-                self._data = json.loads(self.path.read_text(encoding="utf-8"))
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                self._data = data if isinstance(data, dict) else {}
             except (OSError, ValueError):
                 self._data = {}
 

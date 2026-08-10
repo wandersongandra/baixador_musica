@@ -8,8 +8,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from hyperdl.core.utils import ensure_ffmpeg
-
 AUDIO_EXTENSIONS = {
     ".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".opus", ".wma",
 }
@@ -44,6 +42,7 @@ class SplitConfig:
     lead_in: float = DEFAULT_LEAD_IN
     lead_out: float = DEFAULT_LEAD_OUT
     fmt: str = DEFAULT_FORMAT
+    bitrate: str = ""
     prefix: str = DEFAULT_PREFIX
     digits: int = DEFAULT_DIGITS
     adaptive: bool = False
@@ -120,6 +119,10 @@ def detect_silences(
         text=True,
         timeout=300,
     )
+    if result.returncode != 0:
+        lines = result.stderr.strip().splitlines()
+        detail = lines[-1] if lines else "falha desconhecida"
+        raise RuntimeError(f"FFmpeg falhou na analise: {detail}")
     silences: list[tuple[float, float]] = []
     pending: float | None = None
     for line in result.stderr.splitlines():
@@ -148,7 +151,9 @@ def adaptive_threshold(filepath: Path) -> tuple[str, float]:
     match = re.search(r"mean_volume:\s*([-\d.]+)\s*dB", result.stderr)
     if match:
         mean_volume = float(match.group(1))
-        threshold_db = mean_volume - 10
+        # Clampa em -10dB: um valor positivo seria interpretado
+        # pelo ffmpeg como amplitude linear (comportamento inesperado)
+        threshold_db = min(mean_volume - 10, -10)
         return f"{threshold_db:.0f}dB", mean_volume
     return DEFAULT_THRESHOLD, -30
 
@@ -193,8 +198,11 @@ def split_audio(
     progress: ProgressCallback | None = None,
     is_cancelled: CancelCheck | None = None,
 ) -> tuple[list[Path], list[str]]:
-    codec_args = FORMAT_CODEC_MAP.get(config.fmt, FORMAT_CODEC_MAP["mp3"])
+    codec_args = list(FORMAT_CODEC_MAP.get(config.fmt, FORMAT_CODEC_MAP["mp3"]))
     fmt = config.fmt.lstrip(".")
+    if config.bitrate and fmt not in ("flac", "wav"):
+        # Formatos lossless ignoram bitrate; nos demais ele sobrescreve a qualidade
+        codec_args = [codec_args[0], codec_args[1], "-b:a", config.bitrate]
     files: list[Path] = []
     errors: list[str] = []
     total = len(segments)
@@ -259,20 +267,39 @@ def split_file(
     if config.adaptive:
         threshold, _ = adaptive_threshold(filepath)
 
-    silences = detect_silences(filepath, threshold, config.min_silence)
+    try:
+        silences = detect_silences(filepath, threshold, config.min_silence)
+    except Exception as e:
+        return SplitResult(
+            success=False,
+            input_file=filepath,
+            error=str(e),
+            elapsed=time.time() - start,
+        )
+
     segments = build_segments(
         silences, duration, config.lead_in, config.lead_out, config.min_track
     )
 
+    if not segments:
+        return SplitResult(
+            success=False,
+            input_file=filepath,
+            total_duration=duration,
+            audio_info=audio_info,
+            error=(
+                "Nenhuma faixa detectada: nao ha silencios longos o suficiente. "
+                "Tente um threshold mais alto (ex: -30dB) ou reduza o silencio minimo."
+            ),
+            elapsed=time.time() - start,
+        )
+
     output_dir = config.output_dir / filepath.stem
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    tracks: list[Path] = []
-    errors: list[str] = []
-    if segments:
-        tracks, errors = split_audio(
-            filepath, output_dir, segments, config, progress, is_cancelled
-        )
+    tracks, errors = split_audio(
+        filepath, output_dir, segments, config, progress, is_cancelled
+    )
 
     return SplitResult(
         success=not errors,

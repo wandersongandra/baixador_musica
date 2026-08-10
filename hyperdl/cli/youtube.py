@@ -21,6 +21,7 @@ from hyperdl.cli.common import (
     C_RED,
 )
 from hyperdl.core import downloader as dl
+from hyperdl.core.utils import ensure_ffmpeg, ensure_yt_dlp, format_bytes, format_duration
 
 _interrupted = False
 
@@ -36,8 +37,8 @@ def print_report(stats: dl.DownloadStats, no_color: bool = False):
     print(f"  {c('Sucesso:', C_GREEN, no_color)} {stats.success}")
     print(f"  {c('Falha:', C_RED, no_color)}    {stats.failed}")
     print(f"  Pulados:  {stats.skipped}")
-    print(f"  Tamanho:  {dl.format_bytes(stats.total_bytes)}")
-    print(f"  Tempo:    {dl.format_duration(stats.total_time)}")
+    print(f"  Tamanho:  {format_bytes(stats.total_bytes)}")
+    print(f"  Tempo:    {format_duration(stats.total_time)}")
 
     if stats.failed > 0:
         print(f"\n  {c('FALHAS:', C_RED, no_color)}")
@@ -56,14 +57,14 @@ def make_progress_cb(no_color: bool):
             filled = int(bar_len * p.percent / 100)
             bar = "=" * (filled - 1) + ">" if filled > 0 else ""
             bar += "-" * (bar_len - filled)
-            speed = f"{dl.format_bytes(p.speed)}/s" if p.speed else "?"
-            eta = dl.format_duration(p.eta) if p.eta else "?"
+            speed = f"{format_bytes(p.speed)}/s" if p.speed else "?"
+            eta = format_duration(p.eta) if p.eta else "?"
             line = (
                 f"\r  {c('[>>]', C_CYAN, no_color)} "
                 f"[{p.index}/{p.total}] "
                 f"{p.percent:5.1f}% "
                 f"[{bar}] "
-                f"{dl.format_bytes(p.downloaded)}/{dl.format_bytes(p.total_bytes)} "
+                f"{format_bytes(p.downloaded)}/{format_bytes(p.total_bytes)} "
                 f"| {speed} | ETA: {eta}  "
             )
             print(line, end="", flush=True)
@@ -162,10 +163,10 @@ def main() -> int:
     args = build_parser().parse_args()
     print_banner("Hyper Downloader", args.no_color)
 
-    if not dl.ensure_yt_dlp():
+    if not ensure_yt_dlp():
         log_error("yt-dlp nao instalado. Execute: pip install yt-dlp", args.no_color)
         return 1
-    if not dl.ensure_ffmpeg():
+    if not ensure_ffmpeg():
         log_warn("FFmpeg nao encontrado. Conversao pode falhar.", args.no_color)
 
     config = dl.DownloadConfig(

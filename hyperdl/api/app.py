@@ -12,6 +12,7 @@ from hyperdl.api import files as files_api
 from hyperdl.api.jobs import JobManager
 from hyperdl.api.schemas import DownloadRequest, SettingsModel, SplitRequest
 from hyperdl.core import downloader, splitter
+from hyperdl.core.utils import ensure_ffmpeg, ensure_yt_dlp
 from hyperdl.settings import settings
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web" / "static"
@@ -37,6 +38,7 @@ def _update_item(job: dict, url: str, **fields):
 
 def _run_download_job(job: dict, req: DownloadRequest):
     cancel = job["cancel"]
+    job["status"] = "running"
     job["started"] = time.time()
 
     cfg = downloader.DownloadConfig(
@@ -57,7 +59,13 @@ def _run_download_job(job: dict, req: DownloadRequest):
     )
 
     def on_progress(p: downloader.DownloadProgress):
-        job["progress"] = p.percent
+        # Progresso geral pondera o item atual dentro do total do job,
+        # em vez de mostrar so o percentual do item (que anda para tras)
+        if p.total > 0 and p.status in ("downloading", "processing", "finished"):
+            done_items = max(p.index - 1, 0)
+            job["progress"] = min(
+                100.0, (done_items + p.percent / 100) / p.total * 100
+            )
         job["current"] = {
             "index": p.index,
             "total": p.total,
@@ -122,11 +130,14 @@ def _run_download_job(job: dict, req: DownloadRequest):
         job["status"] = "failed"
         job["message"] = f"Erro interno: {e}"
     finally:
+        if job["status"] == "completed":
+            job["progress"] = 100.0
         job["finished"] = time.time()
 
 
 def _run_split_job(job: dict, filepath: Path, cfg: splitter.SplitConfig):
     cancel = job["cancel"]
+    job["status"] = "running"
     job["started"] = time.time()
 
     def on_progress(pct: float, msg: str):
@@ -171,8 +182,8 @@ def health():
     return {
         "status": "ok",
         "version": __version__,
-        "ffmpeg": splitter.ensure_ffmpeg(),
-        "yt_dlp": downloader.ensure_yt_dlp(),
+        "ffmpeg": ensure_ffmpeg(),
+        "yt_dlp": ensure_yt_dlp(),
     }
 
 
@@ -182,9 +193,20 @@ def defaults():
         "audio_formats": sorted(downloader.AUDIO_FORMATS),
         "video_quals": sorted(downloader.VIDEO_QUALS),
         "split_formats": list(splitter.FORMAT_CODEC_MAP.keys()),
+        "audio_format": downloader.DEFAULT_AUDIO_FMT,
         "audio_quality": downloader.DEFAULT_AUDIO_QUAL,
         "video_quality": downloader.DEFAULT_VIDEO_QUAL,
-        "max_upload_mb": 500,
+        "output_dir": str(downloader.DEFAULT_OUTPUT_DIR),
+        "split_dir": str(splitter.DEFAULT_OUTPUT_DIR),
+        "threshold": splitter.DEFAULT_THRESHOLD,
+        "min_silence": splitter.DEFAULT_MIN_SILENCE,
+        "min_track": splitter.DEFAULT_MIN_TRACK,
+        "lead_in": splitter.DEFAULT_LEAD_IN,
+        "lead_out": splitter.DEFAULT_LEAD_OUT,
+        "split_fmt": splitter.DEFAULT_FORMAT,
+        "split_prefix": splitter.DEFAULT_PREFIX,
+        "digits": splitter.DEFAULT_DIGITS,
+        "max_upload_mb": files_api.MAX_UPLOAD_MB,
     }
 
 
@@ -195,7 +217,7 @@ def get_settings():
 
 @app.put("/api/settings")
 def update_settings(payload: SettingsModel):
-    settings.update(payload.model_dump())
+    settings.update(payload.model_dump(exclude_unset=True))
     return settings.all()
 
 
@@ -205,10 +227,11 @@ def start_download(req: DownloadRequest):
         raise HTTPException(400, "Informe ao menos uma URL")
     if req.mode not in ("audio", "video"):
         raise HTTPException(400, "Modo invalido: use 'audio' ou 'video'")
-    if not downloader.ensure_yt_dlp():
+    if not ensure_yt_dlp():
         raise HTTPException(503, "yt-dlp nao instalado")
     job = jobs.create("download", output_dir=req.output_dir)
     job["urls"] = [u.strip() for u in req.urls if u.strip()]
+    job["request"] = {**req.model_dump(), "urls": job["urls"]}
     thread = threading.Thread(target=_run_download_job, args=(job, req), daemon=True)
     job["thread"] = thread
     thread.start()
@@ -217,15 +240,12 @@ def start_download(req: DownloadRequest):
 
 @app.post("/api/split")
 def start_split(req: SplitRequest):
-    p = Path(req.file).expanduser()
-    if not p.is_absolute():
-        p = files_api.BASE_DIR / p
-    p = p.resolve()
+    p = files_api.safe_resolve(req.file)
     if not p.is_file():
         raise HTTPException(400, f"Arquivo nao encontrado: {req.file}")
     if p.suffix.lower() not in splitter.AUDIO_EXTENSIONS:
         raise HTTPException(400, "Formato de audio nao suportado")
-    if not splitter.ensure_ffmpeg():
+    if not ensure_ffmpeg():
         raise HTTPException(503, "FFmpeg nao encontrado no PATH")
 
     cfg = splitter.SplitConfig(
@@ -236,6 +256,7 @@ def start_split(req: SplitRequest):
         lead_in=req.lead_in,
         lead_out=req.lead_out,
         fmt=req.fmt,
+        bitrate=req.bitrate,
         prefix=req.prefix,
         digits=req.digits,
         adaptive=req.adaptive,

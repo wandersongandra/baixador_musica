@@ -52,20 +52,20 @@
   <div class="health" id="health" title="Dependencias do servidor"></div>
 </header>
 
-<nav class="tabs" role="tablist">
-  <button data-tab="baixar" class="active" role="tab" aria-selected="true">
+<nav class="tabs" role="tablist" aria-label="Seccoes">
+  <button id="tab-btn-baixar" data-tab="baixar" class="active" role="tab" aria-selected="true" aria-controls="tab-baixar">
     <svg class="icon"><use href="#i-download"></use></svg> Baixar
   </button>
-  <button data-tab="separar" role="tab" aria-selected="false">
+  <button id="tab-btn-separar" data-tab="separar" role="tab" aria-selected="false" aria-controls="tab-separar">
     <svg class="icon"><use href="#i-split"></use></svg> Separar Faixas
   </button>
-  <button data-tab="arquivos" role="tab" aria-selected="false">
+  <button id="tab-btn-arquivos" data-tab="arquivos" role="tab" aria-selected="false" aria-controls="tab-arquivos">
     <svg class="icon"><use href="#i-folder"></use></svg> Arquivos
   </button>
 </nav>
 
 <main>
-  <section id="tab-baixar" class="tab active" role="tabpanel">
+  <section id="tab-baixar" class="tab active" role="tabpanel" aria-labelledby="tab-btn-baixar">
     <div class="card">
       <div class="card-head">
         <div class="card-title">
@@ -106,7 +106,7 @@
           </div>
           <div class="field">
             <label for="output_dir">Diretorio de saida</label>
-            <input type="text" id="output_dir" value="downloads" spellcheck="false">
+            <input type="text" id="output_dir" spellcheck="false">
           </div>
         </div>
 
@@ -124,7 +124,7 @@
     </div>
   </section>
 
-  <section id="tab-separar" class="tab" role="tabpanel">
+  <section id="tab-separar" class="tab" role="tabpanel" aria-labelledby="tab-btn-separar">
     <div class="card">
       <div class="card-head">
         <div class="card-title">
@@ -160,27 +160,43 @@
         <div class="grid">
           <div class="field">
             <label for="split-threshold">Threshold de silencio</label>
-            <input type="text" id="split-threshold" value="-40dB" spellcheck="false">
+            <input type="text" id="split-threshold" spellcheck="false">
           </div>
           <div class="field">
             <label for="split-min-silence">Silencio minimo (s)</label>
-            <input type="number" id="split-min-silence" step="0.1" min="0.1" value="1.0">
+            <input type="number" id="split-min-silence" step="0.1" min="0.1">
           </div>
           <div class="field">
             <label for="split-min-track">Faixa minima (s)</label>
-            <input type="number" id="split-min-track" step="0.5" min="1" value="5.0">
+            <input type="number" id="split-min-track" step="0.5" min="1">
           </div>
           <div class="field">
             <label for="split-fmt">Formato</label>
             <select id="split-fmt"></select>
           </div>
           <div class="field">
+            <label for="split-bitrate">Bitrate <span class="hint">(opcional)</span></label>
+            <input type="text" id="split-bitrate" placeholder="ex: 192k" spellcheck="false">
+          </div>
+          <div class="field">
             <label for="split-prefix">Prefixo das faixas</label>
-            <input type="text" id="split-prefix" value="faixa" spellcheck="false">
+            <input type="text" id="split-prefix" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="split-digits">Digitos na numeracao</label>
+            <input type="number" id="split-digits" min="1" max="4" step="1">
+          </div>
+          <div class="field">
+            <label for="split-lead-in">Entrada (s)</label>
+            <input type="number" id="split-lead-in" step="0.05" min="0">
+          </div>
+          <div class="field">
+            <label for="split-lead-out">Saida (s)</label>
+            <input type="number" id="split-lead-out" step="0.05" min="0">
           </div>
           <div class="field">
             <label for="split-output">Diretorio de saida</label>
-            <input type="text" id="split-output" value="separado" spellcheck="false">
+            <input type="text" id="split-output" spellcheck="false">
           </div>
         </div>
 
@@ -195,7 +211,7 @@
     </div>
   </section>
 
-  <section id="tab-arquivos" class="tab" role="tabpanel">
+  <section id="tab-arquivos" class="tab" role="tabpanel" aria-labelledby="tab-btn-arquivos">
     <div class="card">
       <div class="card-head">
         <div class="card-title">

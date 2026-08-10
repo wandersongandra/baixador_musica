@@ -122,9 +122,36 @@ function renderItems(job) {
   return `<div class="job-items">${rows}${hidden ? `<div class="job-item dim">+${hidden} mais</div>` : ""}</div>`;
 }
 
+function jobSnapshot(job) {
+  const cur = job.current || {};
+  const items = (job.items || [])
+    .map((it) => [it.url, it.status, it.percent, it.title, it.error].join("|"))
+    .join("||");
+  return [
+    job.kind, job.status, Math.round(job.progress), job.message,
+    cur.title, cur.speed, cur.eta, cur.downloaded, cur.total_bytes, cur.status,
+    items,
+    job.stats ? JSON.stringify(job.stats) : "",
+    job.result ? JSON.stringify(job.result) : "",
+  ].join("\u00a7");
+}
+
 function renderJob(job) {
-  const j = state.jobs.get(job.id);
-  state.jobs.set(job.id, { ...j, ...job });
+  const prev = state.jobs.get(job.id);
+  const snap = jobSnapshot(job);
+  const changed = !prev || prev._snap !== snap;
+  state.jobs.set(job.id, { ...prev, ...job, _snap: snap });
+
+  let card = document.querySelector(`[data-job="${job.id}"]`);
+  if (!card) {
+    card = document.createElement("div");
+    card.className = "job";
+    card.dataset.job = job.id;
+    $("#job-list").prepend(card);
+    changed = true;
+  }
+  if (!changed) return;
+
   const cur = job.current || {};
   const pct = Math.min(100, Math.max(0, job.progress || 0));
   const speed = cur.speed ? `${fmtBytes(cur.speed)}/s` : "";
@@ -155,13 +182,6 @@ function renderJob(job) {
   }
 
   const id = job.id;
-  let card = document.querySelector(`[data-job="${id}"]`);
-  if (!card) {
-    card = document.createElement("div");
-    card.className = "job";
-    card.dataset.job = id;
-    $("#job-list").prepend(card);
-  }
 
   const running = job.status === "running" || job.status === "queued";
   const kindIcon = job.kind === "download" ? "i-download" : "i-split";
@@ -240,6 +260,21 @@ async function clearFinished() {
 
 /* ---------------- Settings ---------------- */
 
+const INPUT_DEFAULTS = {
+  output_dir: "output_dir",
+  audio_format: "audio_format",
+  video_quality: "video_quality",
+  split_dir: "split-output",
+  threshold: "split-threshold",
+  min_silence: "split-min-silence",
+  min_track: "split-min-track",
+  split_fmt: "split-fmt",
+  split_prefix: "split-prefix",
+  lead_in: "split-lead-in",
+  lead_out: "split-lead-out",
+  digits: "split-digits",
+};
+
 async function loadDefaults() {
   try { state.defaults = await api("/api/defaults"); }
   catch { state.defaults = {}; }
@@ -250,6 +285,15 @@ async function loadDefaults() {
     .map((f) => `<option>${f}</option>`).join("");
   $("#split-fmt").innerHTML = (d.split_formats || ["mp3", "flac", "wav"])
     .map((f) => `<option>${f}</option>`).join("");
+  applyDefaults();
+}
+
+function applyDefaults() {
+  const d = state.defaults || {};
+  for (const [key, sel] of Object.entries(INPUT_DEFAULTS)) {
+    const el = $(`#${sel}`);
+    if (el && !el.value && d[key] !== undefined) el.value = d[key];
+  }
 }
 
 async function loadSettings() {
@@ -272,23 +316,31 @@ async function loadSettings() {
     if (s.split_prefix) $("#split-prefix").value = s.split_prefix;
     $("#split-adaptive").checked = !!s.adaptive;
   } catch (e) { console.error(e); }
+  applyDefaults();
 }
+
+const fallback = (sel, key) => {
+  const raw = $(sel).value.trim();
+  if (raw) return raw;
+  const d = state.defaults || {};
+  return d[key] !== undefined ? String(d[key]) : "";
+};
 
 function collectSettings() {
   return {
-    output_dir: $("#output_dir").value.trim() || "downloads",
+    output_dir: fallback("#output_dir", "output_dir") || "downloads",
     audio_format: $("#audio_format").value,
     video_quality: $("#video_quality").value,
     playlist: $("#playlist").checked,
     sponsorblock: $("#sponsorblock").checked,
     embed_metadata: $("#embed_metadata").checked,
     embed_thumbnail: $("#embed_thumbnail").checked,
-    split_dir: $("#split-output").value.trim() || "separado",
-    threshold: $("#split-threshold").value.trim() || "-40dB",
-    min_silence: parseFloat($("#split-min-silence").value) || 1.0,
-    min_track: parseFloat($("#split-min-track").value) || 5.0,
+    split_dir: fallback("#split-output", "split_dir") || "separado",
+    threshold: fallback("#split-threshold", "threshold") || "-40dB",
+    min_silence: parseFloat(fallback("#split-min-silence", "min_silence")) || 1.0,
+    min_track: parseFloat(fallback("#split-min-track", "min_track")) || 5.0,
     split_fmt: $("#split-fmt").value,
-    split_prefix: $("#split-prefix").value.trim() || "faixa",
+    split_prefix: fallback("#split-prefix", "split_prefix") || "faixa",
     adaptive: $("#split-adaptive").checked,
   };
 }
@@ -365,19 +417,32 @@ async function loadFiles() {
 
 /* ---------------- Abas ---------------- */
 
+function activateTab(btn) {
+  document.querySelectorAll(".tabs button").forEach((b) => {
+    b.classList.remove("active");
+    b.setAttribute("aria-selected", "false");
+  });
+  document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+  btn.classList.add("active");
+  btn.setAttribute("aria-selected", "true");
+  $("#tab-" + btn.dataset.tab).classList.add("active");
+  state.filesTabActive = btn.dataset.tab === "arquivos";
+  if (state.filesTabActive) loadFiles();
+}
+
 function initTabs() {
-  document.querySelectorAll(".tabs button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tabs button").forEach((b) => {
-        b.classList.remove("active");
-        b.setAttribute("aria-selected", "false");
-      });
-      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-      btn.classList.add("active");
-      btn.setAttribute("aria-selected", "true");
-      $("#tab-" + btn.dataset.tab).classList.add("active");
-      state.filesTabActive = btn.dataset.tab === "arquivos";
-      if (state.filesTabActive) loadFiles();
+  const buttons = [...document.querySelectorAll(".tabs button")];
+  buttons.forEach((btn, i) => {
+    btn.addEventListener("click", () => activateTab(btn));
+    btn.addEventListener("keydown", (e) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+      e.preventDefault();
+      let next;
+      if (e.key === "Home") next = buttons[0];
+      else if (e.key === "End") next = buttons[buttons.length - 1];
+      else next = buttons[(i + (e.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length];
+      next.focus();
+      activateTab(next);
     });
   });
 }
@@ -411,7 +476,6 @@ async function uploadFile(file) {
     $("#split-file").value = res.path;
     setDropzoneFile(res.name, res.size);
     showToast(`Arquivo "${res.name}" enviado`, "success");
-    saveSettings();
   } catch (e) {
     showToast(e.message, "error");
   } finally {
@@ -459,7 +523,6 @@ function initModeSeg() {
   }
 
   segBtns.forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
-  window._setMode = setMode;
 
   const video = select.value === "video";
   $("#fmt-field").hidden = video;
@@ -476,7 +539,7 @@ function initForms() {
       mode: $("#mode").value,
       audio_format: $("#audio_format").value,
       video_quality: $("#video_quality").value,
-      output_dir: $("#output_dir").value.trim() || "downloads",
+      output_dir: fallback("#output_dir", "output_dir") || "downloads",
       playlist: $("#playlist").checked,
       sponsorblock: $("#sponsorblock").checked,
       embed_metadata: $("#embed_metadata").checked,
@@ -496,12 +559,16 @@ function initForms() {
     if (!file) { showToast("Informe o arquivo de audio (ou arraste-o acima)", "error"); return; }
     const body = {
       file,
-      output_dir: $("#split-output").value.trim() || "separado",
-      threshold: $("#split-threshold").value.trim() || "-40dB",
-      min_silence: parseFloat($("#split-min-silence").value) || 1.0,
-      min_track: parseFloat($("#split-min-track").value) || 5.0,
+      output_dir: fallback("#split-output", "split_dir") || "separado",
+      threshold: fallback("#split-threshold", "threshold") || "-40dB",
+      min_silence: parseFloat(fallback("#split-min-silence", "min_silence")) || 1.0,
+      min_track: parseFloat(fallback("#split-min-track", "min_track")) || 5.0,
       fmt: $("#split-fmt").value,
-      prefix: $("#split-prefix").value.trim() || "faixa",
+      bitrate: $("#split-bitrate").value.trim(),
+      prefix: fallback("#split-prefix", "split_prefix") || "faixa",
+      digits: parseInt($("#split-digits").value, 10) || 2,
+      lead_in: parseFloat($("#split-lead-in").value) || 0.15,
+      lead_out: parseFloat($("#split-lead-out").value) || 0.15,
       adaptive: $("#split-adaptive").checked,
     };
     try {

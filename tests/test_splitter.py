@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 
 from hyperdl.core import splitter
+from hyperdl.core.utils import ensure_ffmpeg
 
 pytestmark = pytest.mark.skipif(
-    not splitter.ensure_ffmpeg(), reason="FFmpeg nao encontrado"
+    not ensure_ffmpeg(), reason="FFmpeg nao encontrado"
 )
 
 

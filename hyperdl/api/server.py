@@ -9,14 +9,15 @@ def main():
     parser = argparse.ArgumentParser(prog="hyperdl-server", description="Hyper Downloader Web")
     parser.add_argument("--host", default="127.0.0.1", help="Endereco (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8000, help="Porta (default: 8000)")
-    parser.add_argument("--no-reload", action="store_true", help="Desabilitar reload")
+    parser.add_argument("--reload", action="store_true", help="Recarregar automaticamente (desenvolvimento)")
+    parser.add_argument("--no-reload", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     uvicorn.run(
         "hyperdl.api.app:app",
         host=args.host,
         port=args.port,
-        reload=not args.no_reload,
+        reload=args.reload and not args.no_reload,
         log_level="info",
     )
 

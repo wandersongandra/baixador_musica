@@ -1,3 +1,1 @@
-from hyperdl.cli import split, youtube
-
-__all__ = ["split", "youtube"]
+"""CLI do Hyper Downloader."""

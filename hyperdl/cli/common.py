@@ -4,8 +4,6 @@ import ctypes
 import os
 import sys
 
-from hyperdl import APP_NAME, __version__
-
 C_RESET = "\033[0m"
 C_BOLD = "\033[1m"
 C_RED = "\033[91m"
