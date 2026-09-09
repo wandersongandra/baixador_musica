@@ -17,8 +17,12 @@ MAX_UPLOAD_MB = 500
 
 
 def safe_resolve(rel: str) -> Path:
-    """Resolve um caminho relativo ou absoluto dentro de BASE_DIR."""
-    p = Path(rel).expanduser()
+    """Resolve caminhos dentro de BASE_DIR e bloqueia traversal em qualquer SO."""
+    # URLs podem carregar separadores Windows mesmo quando o servidor roda em
+    # Linux. Normalizar antes de usar pathlib evita que ``..\\..`` seja tratado
+    # como um nome literal em POSIX e mantém a mesma política entre ambientes.
+    normalized = (rel or "").replace("\\", "/")
+    p = Path(normalized).expanduser()
     target = (BASE_DIR / p).resolve() if not p.is_absolute() else p.resolve()
     if target != BASE_DIR and BASE_DIR not in target.parents:
         raise HTTPException(403, "Caminho fora da area permitida")
